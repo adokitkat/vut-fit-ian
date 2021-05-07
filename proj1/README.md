@@ -1,5 +1,7 @@
 # IAN Project 1 - Working with ELF files
 
+Prints out ELF segments with permissions in relation to ELF sections of an ELF binary file.
+
 ## Requiremets
 
 - `elfutils`
@@ -20,7 +22,7 @@ chmod +x ian-proj1
 
 ```text
 $ ./ian-proj1 hello
-Segment Type         Perm Sections
+Segment Type     Perm Sections
 00	PHDR         R-- 
 01	INTERP       R--  .interp
 02	LOAD         R--  .interp .note.gnu.build-id .note.ABI-tag .gnu.hash .dynsym .dynstr .gnu.version .gnu.version_r .rela.dyn .rela.plt
