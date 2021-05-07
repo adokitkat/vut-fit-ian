@@ -23,12 +23,12 @@ build: release
 build-debug: debug
 
 # Release building
-release: $(wildcard $(SRCDIR)*.c)
-	$(CC) -o $(BINDIR)$(OUTPUT) $(CFLAGS) $(LIBS) $(RELEASE) $^
+release: $(SRCDIR)main.c
+	$(CC) -o $(BINDIR)$(OUTPUT) $(CFLAGS) $(RELEASE) $^ $(LIBS)
 
 # Debug building
-debug: $(wildcard $(SRCDIR)*.c)
-	$(CC) -o $(BINDIR)$(OUTPUT) $(CFLAGS) $(LIBS) $(DEBUG) $^
+debug: $(SRCDIR)main.c
+	$(CC) -o $(BINDIR)$(OUTPUT) $(CFLAGS) $(DEBUG) $^ $(LIBS)
 
 # Archive creation
 pack: archive
@@ -37,7 +37,7 @@ tar:
 	tar -cvf $(NAME).tar README.md Makefile $(SRCDIR)*
 
 targz:
-	tar -czvf $(NAME).tar.gz README.md Makefile $(SRCDIR)*
+	tar -czvf $(NAME).tar.gz Makefile $(SRCDIR)*
 
 zip:
 	zip -r $(NAME).zip README.md Makefile $(SRCDIR)*
