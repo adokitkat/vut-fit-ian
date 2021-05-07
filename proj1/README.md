@@ -1,4 +1,4 @@
-# IAN Project 1 - Work with ELF files
+# IAN Project 1 - Working with ELF files
 
 ## Requiremets
 
