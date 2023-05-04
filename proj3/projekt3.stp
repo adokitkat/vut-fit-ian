@@ -1,0 +1,87 @@
+#!/usr/bin/env stap
+#
+# Adam Múdry (xmudry01)
+#
+
+global i_print
+global begin_time, start_time, end_time
+global cpu_idle_time_all, cpu_idle_time_now, cpu_idle_start, cpu_idle_end
+global cpu_work_time_all, cpu_work_time_now, cpu_work_start, cpu_work_end
+global cpu_interrupt_time_all, cpu_interrupt_time_now, cpu_interrupt_start, cpu_interrupt_end
+
+probe begin {
+    begin_time = gettimeofday_us()
+    start_time = begin_time
+}
+
+probe kernel.function("do_idle@kernel/sched/idle.c").call {
+    cpu_current = cpu()
+    cpu_idle_start[cpu_current] = gettimeofday_us()
+}
+
+probe kernel.function("do_idle@kernel/sched/idle.c").return {
+    cpu_current = cpu()
+    cpu_idle_end[cpu_current] = gettimeofday_us() - cpu_idle_start[cpu_current]
+    cpu_idle_time_all[cpu_current] += cpu_idle_end[cpu_current]
+    cpu_idle_time_now[cpu_current] += cpu_idle_end[cpu_current]
+}
+
+#probe kernel.function("current").call {
+#    cpu_current = cpu()
+#    cpu_work_start[cpu_current] = gettimeofday_us()
+#}
+
+#probe kernel.function("current").return {
+#    cpu_current = cpu()
+#    cpu_work_end[cpu_current] = gettimeofday_us() - cpu_work_start[cpu_current]
+#    cpu_work_time_all[cpu_current] += cpu_work_end[cpu_current]
+#    cpu_work_time_now[cpu_current] += cpu_work_end[cpu_current]
+#}
+
+probe kernel.function("hrtimer_interrupt@kernel/time/hrtimer.c").call {
+    cpu_current = cpu()
+    cpu_interrupt_start[cpu_current] = gettimeofday_us()
+}
+
+probe kernel.function("hrtimer_interrupt@kernel/time/hrtimer.c").return {
+    cpu_current = cpu()
+    cpu_interrupt_end[cpu_current] = gettimeofday_us() - cpu_interrupt_start[cpu_current]
+    cpu_interrupt_time_all[cpu_current] += cpu_interrupt_end[cpu_current]
+    cpu_interrupt_time_now[cpu_current] += cpu_interrupt_end[cpu_current]
+}
+
+function print_data(time_us) {
+    printf("Script run no. %d", ++i_print)
+    current_time = gettimeofday_us() - begin_time
+    printf("    Idle:\n")
+    foreach (_cpu+ in cpu_idle_time_all) {
+        last_cpu_idle = cpu_idle_time_now[_cpu] * 100 / time_us
+        printf("        CPU %d : Last 5s = %d%%,\tAll time = %d%%\n", _cpu, (last_cpu_idle > 100) ? 100 : last_cpu_idle, cpu_idle_time_all[_cpu] * 100 / current_time)
+    }
+    #printf("    Working (in processes):\n")
+    #foreach (_cpu+ in cpu_work_time_all) {
+    #    last_cpu_work = cpu_work_time_now[_cpu] * 100 / time_us
+    #    printf("        CPU %d : Last 5s = %d%%,\tAll time = %d%%\n", _cpu, (last_cpu_work > 100) ? 100 : last_cpu_work, cpu_work_time_all[_cpu] * 100 / current_time)
+    #}
+    printf("    Interrupts:\n");
+    foreach (_cpu+ in cpu_interrupt_time_all) {
+        last_cpu_interrupt = cpu_interrupt_time_now[_cpu] * 100 / time_us
+        printf("        CPU %d : Last 5s = %d%%,\tAll time = %d%%\n", _cpu, (last_cpu_interrupt > 100) ? 100 : last_cpu_interrupt, cpu_interrupt_time_all[_cpu] * 100 / current_time)
+    }
+}
+
+probe timer.ms(5000) {
+    print_data(5000000)
+    start_time = gettimeofday_us()
+
+    foreach (_cpu+ in cpu_idle_time_all) {
+        cpu_idle_time_now[_cpu] = 0
+        #cpu_work_time_now[_cpu] = 0
+        cpu_interrupt_time_now[_cpu] = 0
+    }
+}
+
+probe end {
+    end_time = gettimeofday_us() - start_time
+    print_data(end_time)
+}
